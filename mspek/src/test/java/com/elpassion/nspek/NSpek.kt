@@ -78,7 +78,11 @@ private fun runMethodTests(method: Method, testClass: Class<*>): Pair<MutableLis
             method.invoke(testClass.newInstance(), nSpekContext)
             break
         } catch (e: InvocationTargetException) {
-            descriptions.addFromNames(nSpekContext.names, method.name)
+            if (e.cause is TestEnd) {
+                descriptions.addFromNames(nSpekContext.names, method.name)
+            } else {
+                break
+            }
         }
     }
     return descriptions to notifications
@@ -101,7 +105,7 @@ private fun MutableList<Description>.addFromNames(names: List<String>, name: Str
             if (index == 0) {
                 add(description)
             } else {
-                newSuites[index-1].addChild(description)
+                newSuites[index - 1].addChild(description)
             }
         }
         val element = Description.createTestDescription(last().displayName, names.last())
