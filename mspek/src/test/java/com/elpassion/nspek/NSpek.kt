@@ -101,16 +101,11 @@ private fun MutableList<Description>.addFromNames(names: List<String>, name: Str
             if (index == 0) {
                 add(description)
             } else {
-                var last: Description = last()
-                while (last.children.isNotEmpty()) {
-                    last = last.children.first()
-                }
-                last.addChild(description)
+                newSuites[index-1].addChild(description)
             }
         }
-
         val element = Description.createTestDescription(last().displayName, names.last())
-        add(element)
+        (newSuites.lastOrNull() ?: last()).addChild(element)
     }
 }
 
