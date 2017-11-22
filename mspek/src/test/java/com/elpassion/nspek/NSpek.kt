@@ -89,21 +89,27 @@ private fun MutableList<Description>.addFromNames(names: List<String>, name: Str
         return
     } else if (names.size == 1) {
         val element = Description.createTestDescription(name, names.first())
-        lastOrNull()?.addChild(element)
         add(element)
     } else {
         val suites = names.dropLast(1)
-        val newSuites = suites.filter {
-            val suiteDescription = Description.createSuiteDescription(it)
-            contains(suiteDescription)
+        val newSuites = suites
+                .map { Description.createSuiteDescription(it) }
+                .filter {
+                    !contains(it)
+                }
+        newSuites.forEachIndexed { index, description ->
+            if (index == 0) {
+                add(description)
+            } else {
+                var last: Description = last()
+                while (last.children.isNotEmpty()) {
+                    last = last.children.first()
+                }
+                last.addChild(description)
+            }
         }
-        newSuites.forEach { s ->
-            val suite = Description.createSuiteDescription(s)
-            lastOrNull()?.addChild(suite)
-            add(suite)
-        }
+
         val element = Description.createTestDescription(last().displayName, names.last())
-        lastOrNull()?.addChild(element)
         add(element)
     }
 }
