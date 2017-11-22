@@ -4,6 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.mockito.InOrder
 
 private val codeFragment = mock<NSpekCodeInvocationTest.CodeFragment>()
 
@@ -47,23 +48,38 @@ class NSpekCodeInvocationTest {
     @Test
     fun shouldInvokeAllCodeInCorrectOrder() {
         val orderVerification = inOrder(codeFragment)
-        orderVerification.verify(codeFragment).first()
-        orderVerification.verify(codeFragment).second()
+        verifySubTestOrder(orderVerification)
+        verifySubSuiteNestedSubTestOrder(orderVerification)
+        verifySubSuiteSecondNestedSubTestOrder(orderVerification)
+        verifyEndOfSubSuiteOrder(orderVerification)
+        verifyEndOfAllTestOrder(orderVerification)
+    }
 
+    private fun verifyEndOfAllTestOrder(orderVerification: InOrder) {
         orderVerification.verify(codeFragment).first()
-        orderVerification.verify(codeFragment).third()
-        orderVerification.verify(codeFragment).fourth()
+        orderVerification.verify(codeFragment).sixth()
+    }
 
+    private fun verifySubSuiteSecondNestedSubTestOrder(orderVerification: InOrder) {
         orderVerification.verify(codeFragment).first()
         orderVerification.verify(codeFragment).third()
         orderVerification.verify(codeFragment).fifth()
+    }
 
+    private fun verifySubSuiteNestedSubTestOrder(orderVerification: InOrder) {
         orderVerification.verify(codeFragment).first()
         orderVerification.verify(codeFragment).third()
+        orderVerification.verify(codeFragment).fourth()
+    }
 
+    private fun verifyEndOfSubSuiteOrder(orderVerification: InOrder) {
         orderVerification.verify(codeFragment).first()
-        orderVerification.verify(codeFragment).sixth()
+        orderVerification.verify(codeFragment).third()
+    }
 
+    private fun verifySubTestOrder(orderVerification: InOrder) {
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).second()
     }
 
     class ExampleTestClass {
@@ -77,7 +93,7 @@ class NSpekCodeInvocationTest {
                 "nested-subtest" o {
                     codeFragment.fourth()
                 }
-                "nested-failing-subtest" o {
+                "second-nested-subtest" o {
                     codeFragment.fifth()
                 }
             }
