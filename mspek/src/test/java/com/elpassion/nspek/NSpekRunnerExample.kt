@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 @RunWith(NSpekRunner::class)
 class NSpekRunnerExample {
 
-    fun NSpekContext.test() {
+    fun NSpekMethodContext.test() {
         "subtest" o {
             assertTrue(true)
         }
