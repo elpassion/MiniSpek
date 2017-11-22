@@ -17,5 +17,5 @@ val Throwable.causeLocation: CodeLocation?
 
 val Array<StackTraceElement>.userCodeLocation: CodeLocation
     get() {
-        return get(indexOfFirst { it.methodName == "o" && it.fileName == "NSpek.kt" && it.className == "NSpekMethodContext" } + 1).location
+        return get(indexOfFirst { it.methodName == "o" && it.fileName == "NSpek.kt" && it.className == "com.elpassion.nspek.NSpekMethodContext" } + 1).location
     }

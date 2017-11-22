@@ -88,16 +88,23 @@ private fun MutableList<Description>.addFromNames(names: List<String>, name: Str
     if (names.isEmpty()) {
         return
     } else if (names.size == 1) {
-        add(Description.createTestDescription(name, names.first()))
+        val element = Description.createTestDescription(name, names.first())
+        lastOrNull()?.addChild(element)
+        add(element)
     } else {
         val suites = names.dropLast(1)
-        suites.forEach {
+        val newSuites = suites.filter {
             val suiteDescription = Description.createSuiteDescription(it)
-            if (!contains(suiteDescription)) {
-                add(suiteDescription)
-            }
+            contains(suiteDescription)
         }
-        add(Description.createTestDescription(last().displayName, names.last()))
+        newSuites.forEach { s ->
+            val suite = Description.createSuiteDescription(s)
+            lastOrNull()?.addChild(suite)
+            add(suite)
+        }
+        val element = Description.createTestDescription(last().displayName, names.last())
+        lastOrNull()?.addChild(element)
+        add(element)
     }
 }
 
