@@ -19,6 +19,8 @@ dependencies {
     implementation(kotlin("stdlib", "1.1.50"))
     implementation("junit:junit:4.12")
     testImplementation("org.assertj:assertj-core:3.8.0")
+    testImplementation("com.nhaarman:mockito-kotlin:1.5.0")
+
 }
 
 val sourcesJar by tasks.creating(Jar::class) {
