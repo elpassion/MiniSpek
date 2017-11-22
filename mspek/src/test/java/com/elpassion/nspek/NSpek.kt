@@ -1,9 +1,13 @@
 package com.elpassion.nspek
 
+import com.elpassion.mspek.CodeLocation
+import com.elpassion.mspek.TestEnd
+import com.elpassion.mspek.currentUserCodeLocation
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 
@@ -67,16 +71,34 @@ private fun runMethodsTests(testClass: Class<*>): Pair<List<Description>, List<N
 private fun runMethodTests(method: Method, testClass: Class<*>): Pair<MutableList<Description>, MutableList<Notification>> {
     val notifications = mutableListOf<Notification>()
     val descriptions = mutableListOf<Description>()
-
-    val nSpekContext = NSpekMethodContext(method.name)
-    method.invoke(testClass.newInstance(), nSpekContext)
-    nSpekContext.pairs().run {
-        first.forEach {
-            descriptions.add(it)
+    val nSpekContext = NSpekMethodContext()
+    while (true) {
+        try {
+            nSpekContext.names.clear()
+            method.invoke(testClass.newInstance(), nSpekContext)
+            break
+        } catch (e: InvocationTargetException) {
+            descriptions.addFromNames(nSpekContext.names, method.name)
         }
-        notifications.addAll(second)
     }
     return descriptions to notifications
+}
+
+private fun MutableList<Description>.addFromNames(names: List<String>, name: String) {
+    if (names.isEmpty()) {
+        return
+    } else if (names.size == 1) {
+        add(Description.createTestDescription(name, names.first()))
+    } else {
+        val suites = names.dropLast(1)
+        suites.forEach {
+            val suiteDescription = Description.createSuiteDescription(it)
+            if (!contains(suiteDescription)) {
+                add(suiteDescription)
+            }
+        }
+        add(Description.createTestDescription(last().displayName, names.last()))
+    }
 }
 
 sealed class Notification {
@@ -85,54 +107,25 @@ sealed class Notification {
     data class Failure(val description: Description, val cause: Throwable) : Notification()
 }
 
-class NSpekMethodContext(private val parentName: String) {
-    val children = mutableListOf<Description>()
+class NSpekMethodContext {
+    val finishedTests = mutableSetOf<CodeLocation>()
+    val names = mutableListOf<String>()
 
     infix fun String.o(code: NSpekMethodContext.() -> Unit) {
-        runCode(this, code)
-    }
-
-    private fun runCode(currentName: String, code: (NSpekMethodContext) -> Unit) {
-        children.add(createDescription(currentName, code))
-    }
-
-    private fun createDescription(currentName: String, code: (NSpekMethodContext) -> Unit): Description {
-        val children = runCodeWithContext(currentName, code)
-        return if (children.isEmpty()) {
-            Description.createTestDescription(parentName, currentName)
-        } else {
-            Description.createSuiteDescription(currentName).apply {
-                children.forEach {
-                    addChild(it)
-                }
+        if (!finishedTests.contains(currentUserCodeLocation)) {
+            names.add(this)
+            try {
+                code()
+                finishedTests.add(currentUserCodeLocation)
+                throw TestEnd()
+            } catch (ex: TestEnd) {
+                throw ex
+            } catch (ex: Throwable) {
+                finishedTests.add(currentUserCodeLocation)
+                throw TestEnd(ex)
             }
         }
     }
-
-    fun pairs(): Pair<MutableList<Description>, MutableList<Notification>> {
-        val notifications = mutableListOf<Notification>()
-        val descriptions = mutableListOf<Description>()
-
-        children.forEach {
-            descriptions.add(it)
-            notifications.add(Notification.Start(it))
-            it.children.forEach {
-                notifications.add(Notification.Start(it))
-
-                notifications.add(Notification.End(it))
-            }
-            notifications.add(Notification.End(it))
-        }
-        return descriptions to notifications
-    }
 }
 
-private fun runCodeWithContext(currentName: String, code: (NSpekMethodContext) -> Unit): List<Description> {
-    val nSpekContext = NSpekMethodContext(currentName)
-    try {
-        code(nSpekContext)
-    } catch (e: Exception) {
-
-    }
-    return nSpekContext.children
-}
+class TestEnd(cause: Throwable? = null) : RuntimeException(cause)
