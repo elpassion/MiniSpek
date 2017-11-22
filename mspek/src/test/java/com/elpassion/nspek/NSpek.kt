@@ -12,7 +12,7 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
     private val rootDescription: Description
 
     init {
-        val (rootDescription, runResult) = doAll(testClass)
+        val (rootDescription, runResult) = runClassTests(testClass)
         this.rootDescription = rootDescription
         this.notifications = runResult
     }
@@ -30,28 +30,52 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
     }
 }
 
-fun doAll(testClass: Class<*>): Pair<Description, List<Notification>> {
+fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val notifications = mutableListOf<Notification>()
-    val descriptions = Description.createSuiteDescription(testClass).apply {
-        testClass.declaredMethods.forEach { method ->
-            addChild(Description.createSuiteDescription(method.name).apply {
-                notifications.add(Notification.Start(this))
-                notifications.add(Notification.End(this))
-                val children = runMethod(method, testClass.newInstance())
-                children.forEach {
-                    addChild(it)
-                    notifications.add(Notification.Start(it))
-                    it.children.forEach {
-                        notifications.add(Notification.Start(it))
-                        notifications.add(Notification.End(it))
-                    }
-                    notifications.add(Notification.End(it))
+    val classDescription = Description.createSuiteDescription(testClass)
+    notifications.add(Notification.Start(classDescription))
+    runMethodsTests(testClass)
+            .run {
+                first.forEach {
+                    classDescription.addChild(it)
                 }
-            })
+                notifications.addAll(second)
+            }
+    notifications.add(Notification.End(classDescription))
+    return classDescription to notifications
+}
+
+private fun runMethodsTests(testClass: Class<*>): Pair<List<Description>, List<Notification>> {
+    val notifications = mutableListOf<Notification>()
+    val descriptions = mutableListOf<Description>()
+
+    testClass.declaredMethods.map { method ->
+        val methodDescription = Description.createSuiteDescription(method.name)
+        descriptions.add(methodDescription)
+        notifications.add(Notification.Start(methodDescription))
+        runMethodTests(method, testClass).run {
+            first.forEach {
+                methodDescription.addChild(it)
+            }
+            notifications.addAll(second)
         }
+        notifications.add(Notification.End(methodDescription))
     }
-    notifications.add(Notification.Start(descriptions))
-    notifications.add(Notification.End(descriptions))
+    return descriptions to notifications
+}
+
+private fun runMethodTests(method: Method, testClass: Class<*>): Pair<MutableList<Description>, MutableList<Notification>> {
+    val notifications = mutableListOf<Notification>()
+    val descriptions = mutableListOf<Description>()
+
+    val nSpekContext = NSpekMethodContext(method.name)
+    method.invoke(testClass.newInstance(), nSpekContext)
+    nSpekContext.pairs().run {
+        first.forEach {
+            descriptions.add(it)
+        }
+        notifications.addAll(second)
+    }
     return descriptions to notifications
 }
 
@@ -84,16 +108,31 @@ class NSpekMethodContext(private val parentName: String) {
             }
         }
     }
-}
 
-private fun runMethod(method: Method, instance: Any?): List<Description> {
-    val nSpekContext = NSpekMethodContext(method.name)
-    method.invoke(instance, nSpekContext)
-    return nSpekContext.children
+    fun pairs(): Pair<MutableList<Description>, MutableList<Notification>> {
+        val notifications = mutableListOf<Notification>()
+        val descriptions = mutableListOf<Description>()
+
+        children.forEach {
+            descriptions.add(it)
+            notifications.add(Notification.Start(it))
+            it.children.forEach {
+                notifications.add(Notification.Start(it))
+
+                notifications.add(Notification.End(it))
+            }
+            notifications.add(Notification.End(it))
+        }
+        return descriptions to notifications
+    }
 }
 
 private fun runCodeWithContext(currentName: String, code: (NSpekMethodContext) -> Unit): List<Description> {
     val nSpekContext = NSpekMethodContext(currentName)
-    code(nSpekContext)
+    try {
+        code(nSpekContext)
+    } catch (e: Exception) {
+
+    }
     return nSpekContext.children
 }
