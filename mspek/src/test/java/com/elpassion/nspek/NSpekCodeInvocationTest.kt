@@ -1,19 +1,11 @@
 package com.elpassion.nspek
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.*
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-private val firstCodeFragment = mock<() -> Unit>()
-private val secondCodeFragment = mock<() -> Unit>()
-private val thirdCodeFragment = mock<() -> Unit>()
-private val fourthCodeFragment = mock<() -> Unit>()
-private val fifthCodeFragment = mock<() -> Unit>()
-private val sixthCodeFragment = mock<() -> Unit>()
+private val codeFragment = mock<NSpekCodeInvocationTest.CodeFragment>()
 
 class NSpekCodeInvocationTest {
 
@@ -24,56 +16,86 @@ class NSpekCodeInvocationTest {
 
     @Test
     fun shouldInvokeCodeWitchIsInside() {
-        verify(firstCodeFragment, times(5)).invoke()
+        verify(codeFragment, times(5)).first()
     }
 
     @Test
     fun shouldInvokeCodeFromNamedNesting() {
-        verify(secondCodeFragment).invoke()
+        verify(codeFragment).second()
     }
 
     @Test
     fun shouldInvokeCodeOtherNamedNesting() {
-        verify(thirdCodeFragment, times(3)).invoke()
+        verify(codeFragment, times(3)).third()
     }
 
     @Test
     fun shouldInvokeCodeFromNamedNestedNesting() {
-        verify(fourthCodeFragment).invoke()
+        verify(codeFragment).fourth()
     }
 
     @Test
     fun shouldInvokeCodeFromSecondNamedNestedNesting() {
-        verify(fifthCodeFragment).invoke()
+        verify(codeFragment).fifth()
     }
 
     @Test
     fun shouldInvokeCodeAfterAllNamedNestedCases() {
-        verify(sixthCodeFragment).invoke()
+        verify(codeFragment).sixth()
+    }
+
+    @Test
+    fun shouldInvokeAllCodeInCorrectOrder() {
+        val orderVerification = inOrder(codeFragment)
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).second()
+
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).third()
+        orderVerification.verify(codeFragment).fourth()
+
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).third()
+        orderVerification.verify(codeFragment).fifth()
+
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).third()
+
+        orderVerification.verify(codeFragment).first()
+        orderVerification.verify(codeFragment).sixth()
+
     }
 
     class ExampleTestClass {
         fun NSpekMethodContext.test() {
-            firstCodeFragment.invoke()
+            codeFragment.first()
             "sub-test" o {
-                secondCodeFragment.invoke()
+                codeFragment.second()
             }
             "sub-suite" o {
-                thirdCodeFragment.invoke()
+                codeFragment.third()
                 "nested-subtest" o {
-                    fourthCodeFragment.invoke()
+                    codeFragment.fourth()
                 }
                 "nested-failing-subtest" o {
-                    fifthCodeFragment.invoke()
+                    codeFragment.fifth()
                 }
             }
-            sixthCodeFragment.invoke()
+            codeFragment.sixth()
         }
     }
 
     @After
     fun tearDown() {
-        reset(firstCodeFragment, secondCodeFragment, thirdCodeFragment,
-                fourthCodeFragment, fifthCodeFragment, sixthCodeFragment)
+        reset(codeFragment)
+    }
+
+    interface CodeFragment{
+        fun first()
+        fun second()
+        fun third()
+        fun fourth()
+        fun fifth()
+        fun sixth()
     }
 }
