@@ -36,41 +36,23 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
 
 fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val notifications = mutableListOf<Notification>()
-    val classDescription = Description.createSuiteDescription(testClass)
-    notifications.add(Notification.Start(classDescription))
-    runMethodsTests(testClass)
-            .run {
-                first.forEach {
-                    classDescription.addChild(it)
-                }
-                notifications.addAll(second)
-            }
-    notifications.add(Notification.End(classDescription))
-    return classDescription to notifications
-}
-
-private fun runMethodsTests(testClass: Class<*>): Pair<List<Description>, List<Notification>> {
-    val notifications = mutableListOf<Notification>()
-    val descriptions = mutableListOf<Description>()
-
-    testClass.declaredMethods.map { method ->
-        val methodDescription = Description.createSuiteDescription(method.name)
-        descriptions.add(methodDescription)
-        notifications.add(Notification.Start(methodDescription))
-        runMethodTests(method, testClass).run {
-            first.forEach {
-                methodDescription.addChild(it)
-            }
-            notifications.addAll(second)
-        }
-        notifications.add(Notification.End(methodDescription))
+    val descriptions = runMethodsTests(testClass).map {
+        it.copy(names = listOf(testClass.name) + it.names)
     }
-    return descriptions to notifications
+    val rootDescription = descriptions.map { it.names }.toDescription(testClass.name).first()
+    return rootDescription to notifications
 }
 
-private fun runMethodTests(method: Method, testClass: Class<*>): Pair<List<Description>, List<Notification>> {
-    val notifications = mutableListOf<Notification>()
-    val descriptionsNames = mutableListOf<List<String>>()
+private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
+    return testClass.declaredMethods.flatMap { method ->
+        runMethodTests(method, testClass).map { testBranch ->
+            testBranch.copy(names = listOf(method.name) + testBranch.names)
+        }
+    }
+}
+
+private fun runMethodTests(method: Method, testClass: Class<*>): List<TestBranch> {
+    val descriptionsNames = mutableListOf<TestBranch>()
     val nSpekContext = NSpekMethodContext()
     while (true) {
         try {
@@ -79,18 +61,20 @@ private fun runMethodTests(method: Method, testClass: Class<*>): Pair<List<Descr
             break
         } catch (e: InvocationTargetException) {
             if (e.cause is TestEnd) {
-                descriptionsNames.add(ArrayList(nSpekContext.names))
+                descriptionsNames.add(TestBranch(ArrayList(nSpekContext.names), e.cause?.cause))
             } else {
                 break
             }
         }
     }
-    return descriptionsNames.toDescription(method.name) to notifications
+    return descriptionsNames
 }
+
+data class TestBranch(val names: List<String>, val throwable: Throwable? = null)
 
 class InfiniteMap(map: MutableMap<String, InfiniteMap> = mutableMapOf()) : MutableMap<String, InfiniteMap> by map
 
-private fun MutableList<List<String>>.toDescription(rootName: String): List<Description> {
+private fun List<List<String>>.toDescription(rootName: String): List<Description> {
     val map = InfiniteMap()
     forEach { names ->
         names.fold(map, { acc, name ->
