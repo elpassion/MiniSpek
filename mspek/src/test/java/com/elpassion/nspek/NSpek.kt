@@ -1,7 +1,6 @@
 package com.elpassion.nspek
 
 import com.elpassion.mspek.CodeLocation
-import com.elpassion.mspek.TestEnd
 import com.elpassion.mspek.currentUserCodeLocation
 import org.junit.runner.Description
 import org.junit.runner.Runner
@@ -9,7 +8,6 @@ import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
-
 
 class NSpekRunner(testClass: Class<*>) : Runner() {
     private val notifications: List<Notification>
