@@ -36,9 +36,8 @@ fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val notifications = mutableListOf<Notification>()
     val descriptions = runMethodsTests(testClass)
     val rootDescription = Description.createSuiteDescription(testClass)
-    val toTree = descriptions.map { it.names }.toTree(rootDescription)
-    rootDescription.addAllChildren(toTree.getDescriptions())
-    return rootDescription to notifications
+    val descriptionsTree = descriptions.map { it.names }.toTree()
+    return rootDescription.addAllChildren(descriptionsTree.getDescriptions()) to notifications
 }
 
 private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
@@ -72,13 +71,18 @@ data class TestBranch(val names: List<String>, val throwable: Throwable? = null)
 
 data class InfiniteMap(val throwable: Throwable? = null, val description: Description) : MutableMap<String, InfiniteMap> by mutableMapOf()
 
-private fun List<List<String>>.toTree(description: Description): InfiniteMap {
-    val map = InfiniteMap(description = description)
+private fun List<List<String>>.toTree(): InfiniteMap {
+    val map = InfiniteMap(description = Description.createSuiteDescription("DUMMY ROOT DESCRIPTION"))
     forEach { names ->
-        val lastName = names.last()
-        names.dropLast(1).fold(map, { acc, name ->
-            acc.getOrPut(name, { InfiniteMap(description = Description.createSuiteDescription(name)) })
-        }).getOrPut(lastName, { InfiniteMap(description = Description.createTestDescription(names.dropLast(1).last(), lastName)) })
+        names.foldIndexed(map, { index, acc, name ->
+            acc.getOrPut(name, {
+                if (index != names.lastIndex) {
+                    InfiniteMap(description = Description.createSuiteDescription(name))
+                } else {
+                    InfiniteMap(description = Description.createTestDescription(names[index - 1], name))
+                }
+            })
+        })
     }
     return map
 }
