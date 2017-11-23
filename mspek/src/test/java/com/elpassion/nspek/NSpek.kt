@@ -34,10 +34,10 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
 
 fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val notifications = mutableListOf<Notification>()
-    val descriptions = runMethodsTests(testClass).map {
-        it.copy(names = listOf(testClass.name) + it.names)
-    }
-    val rootDescription = descriptions.map { it.names }.toDescription(testClass.name).first()
+    val descriptions = runMethodsTests(testClass)
+    val rootDescription = Description.createSuiteDescription(testClass)
+    val toTree = descriptions.map { it.names }.toTree(rootDescription)
+    rootDescription.addAllChildren(toTree.getDescriptions())
     return rootDescription to notifications
 }
 
@@ -70,24 +70,25 @@ private fun runMethodTests(method: Method, testClass: Class<*>): List<TestBranch
 
 data class TestBranch(val names: List<String>, val throwable: Throwable? = null)
 
-class InfiniteMap(map: MutableMap<String, InfiniteMap> = mutableMapOf()) : MutableMap<String, InfiniteMap> by map
+data class InfiniteMap(val throwable: Throwable? = null, val description: Description) : MutableMap<String, InfiniteMap> by mutableMapOf()
 
-private fun List<List<String>>.toDescription(rootName: String): List<Description> {
-    val map = InfiniteMap()
+private fun List<List<String>>.toTree(description: Description): InfiniteMap {
+    val map = InfiniteMap(description = description)
     forEach { names ->
-        names.fold(map, { acc, name ->
-            acc.getOrPut(name, { InfiniteMap() })
-        })
+        val lastName = names.last()
+        names.dropLast(1).fold(map, { acc, name ->
+            acc.getOrPut(name, { InfiniteMap(description = Description.createSuiteDescription(name)) })
+        }).getOrPut(lastName, { InfiniteMap(description = Description.createTestDescription(names.dropLast(1).last(), lastName)) })
     }
-    return map.getDescriptions(rootName)
+    return map
 }
 
-private fun InfiniteMap.getDescriptions(rootName: String): List<Description> {
-    return map { (name, map) ->
+private fun InfiniteMap.getDescriptions(): List<Description> {
+    return values.map { map ->
         if (map.isNotEmpty()) {
-            Description.createSuiteDescription(name).addAllChildren(map.getDescriptions(name))
+            map.description.addAllChildren(map.getDescriptions())
         } else {
-            Description.createTestDescription(rootName, name)
+            map.description
         }
     }
 }

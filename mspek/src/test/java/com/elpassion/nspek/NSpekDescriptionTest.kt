@@ -19,7 +19,8 @@ class NSpekDescriptionTest {
 
     @Test
     fun shouldRegisterNestedTestDescription() {
-        assertEquals("subtest(test)", NSpekRunner(ExampleTestClass::class.java).description.children.first().children.first().displayName)
+        val description = NSpekRunner(ExampleTestClass::class.java).description
+        assertEquals("subtest(test)", description.children.first().children.first().displayName)
     }
 
     @Test
