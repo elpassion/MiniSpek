@@ -68,9 +68,9 @@ private fun runMethodsTests(testClass: Class<*>): Pair<List<Description>, List<N
     return descriptions to notifications
 }
 
-private fun runMethodTests(method: Method, testClass: Class<*>): Pair<MutableList<Description>, MutableList<Notification>> {
+private fun runMethodTests(method: Method, testClass: Class<*>): Pair<List<Description>, List<Notification>> {
     val notifications = mutableListOf<Notification>()
-    val descriptions = mutableListOf<Description>()
+    val descriptionsNames = mutableListOf<List<String>>()
     val nSpekContext = NSpekMethodContext()
     while (true) {
         try {
@@ -79,37 +79,40 @@ private fun runMethodTests(method: Method, testClass: Class<*>): Pair<MutableLis
             break
         } catch (e: InvocationTargetException) {
             if (e.cause is TestEnd) {
-                descriptions.addFromNames(nSpekContext.names, method.name)
+                descriptionsNames.add(ArrayList(nSpekContext.names))
             } else {
                 break
             }
         }
     }
-    return descriptions to notifications
+    return descriptionsNames.toDescription(method.name) to notifications
 }
 
-private fun MutableList<Description>.addFromNames(names: List<String>, name: String) {
-    if (names.isEmpty()) {
-        return
-    } else if (names.size == 1) {
-        val element = Description.createTestDescription(name, names.first())
-        add(element)
-    } else {
-        val suites = names.dropLast(1)
-        val newSuites = suites
-                .map { Description.createSuiteDescription(it) }
-                .filter {
-                    !contains(it)
-                }
-        newSuites.forEachIndexed { index, description ->
-            if (index == 0) {
-                add(description)
-            } else {
-                newSuites[index - 1].addChild(description)
-            }
+class InfiniteMap(map: MutableMap<String, InfiniteMap> = mutableMapOf()) : MutableMap<String, InfiniteMap> by map
+
+private fun MutableList<List<String>>.toDescription(rootName: String): List<Description> {
+    val map = InfiniteMap()
+    forEach { names ->
+        names.fold(map, { acc, name ->
+            acc.getOrPut(name, { InfiniteMap() })
+        })
+    }
+    return map.getDescriptions(rootName)
+}
+
+private fun InfiniteMap.getDescriptions(rootName: String): List<Description> {
+    return map { (name, map) ->
+        if (map.isNotEmpty()) {
+            Description.createSuiteDescription(name).addAllChildren(map.getDescriptions(name))
+        } else {
+            Description.createTestDescription(rootName, name)
         }
-        val element = Description.createTestDescription(last().displayName, names.last())
-        (newSuites.lastOrNull() ?: last()).addChild(element)
+    }
+}
+
+private fun Description.addAllChildren(descriptions: List<Description>) = apply {
+    descriptions.forEach {
+        addChild(it)
     }
 }
 

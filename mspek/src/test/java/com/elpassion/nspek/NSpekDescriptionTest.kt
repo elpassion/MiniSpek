@@ -50,6 +50,16 @@ class NSpekDescriptionTest {
         assertEquals("not-a-nested-test-2(not-a-nested-suite)", NSpekRunner(testClass).description.children.first().children[1].children[1].displayName)
     }
 
+    @Test
+    fun shouldRegisterDoubleNestedSuiteInNestedSuite() {
+        val classDescription = NSpekRunner(ExampleTestClass::class.java).description
+        val methodDescription = classDescription.children.first()
+        val nestedSuite = methodDescription.children[1]
+        val doublyNestedSuite = nestedSuite.children[2]
+        val secondTest = doublyNestedSuite.children[1]
+        assertEquals("nested-2-test-2(nested-2-suite)", secondTest.displayName)
+    }
+
     class ExampleTestClass {
         fun NSpekMethodContext.test() {
             assertTrue(true)
@@ -62,6 +72,14 @@ class NSpekDescriptionTest {
                 }
                 "nested-test-2" o {
                     assertTrue(true)
+                }
+                "nested-2-suite" o {
+                    "nested-2-test" o {
+                        assertTrue(true)
+                    }
+                    "nested-2-test-2" o {
+                        assertTrue(true)
+                    }
                 }
             }
         }
