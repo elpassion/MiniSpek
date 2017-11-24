@@ -33,7 +33,6 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
 }
 
 fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
-    val notifications = mutableListOf<Notification>()
     val descriptions = runMethodsTests(testClass).map { testBranch ->
         testBranch.copy(names = listOf(testClass.name) + testBranch.names)
     }
@@ -43,8 +42,17 @@ fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
 
 private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
     return testClass.declaredMethods.flatMap { method ->
-        runMethodTests(method, testClass).map { testBranch ->
-            testBranch.copy(names = listOf(method.name) + testBranch.names)
+        try {
+            val results = runMethodTests(method, testClass).map { testBranch ->
+                testBranch.copy(names = listOf(method.name) + testBranch.names)
+            }
+            if (results.isNotEmpty()) {
+                results
+            } else {
+                listOf(TestBranch(names = listOf(method.name)))
+            }
+        } catch (t: Throwable) {
+            listOf(TestBranch(names = listOf(method.name), throwable = t))
         }
     }
 }
@@ -61,7 +69,7 @@ private fun runMethodTests(method: Method, testClass: Class<*>): List<TestBranch
             if (e.cause is TestEnd) {
                 descriptionsNames.add(TestBranch(ArrayList(nSpekContext.names), e.cause?.cause))
             } else {
-                break
+                throw e.cause!!
             }
         }
     }
