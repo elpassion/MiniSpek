@@ -34,10 +34,11 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
 
 fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val notifications = mutableListOf<Notification>()
-    val descriptions = runMethodsTests(testClass)
-    val rootDescription = Description.createSuiteDescription(testClass)
-    val descriptionsTree = descriptions.map { it.names }.toTree()
-    return rootDescription.addAllChildren(descriptionsTree.getDescriptions()) to notifications
+    val descriptions = runMethodsTests(testClass).map { testBranch ->
+        testBranch.copy(names = listOf(testClass.name) + testBranch.names)
+    }
+    val descriptionsTree = descriptions.map { it.names }.toTree().getDescriptions()
+    return descriptionsTree.first() to notifications
 }
 
 private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
