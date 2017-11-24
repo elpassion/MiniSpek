@@ -25,7 +25,10 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
         notifications.forEach {
             when (it) {
                 is Notification.Start -> notifier.fireTestStarted(it.description)
-                is Notification.Failure -> notifier.fireTestFailure(Failure(it.description, it.cause))
+                is Notification.Failure -> {
+                    notifier.fireTestFailure(Failure(it.description, it.cause))
+                    notifier.fireTestFinished(it.description)
+                }
                 is Notification.End -> notifier.fireTestFinished(it.description)
             }
         }
