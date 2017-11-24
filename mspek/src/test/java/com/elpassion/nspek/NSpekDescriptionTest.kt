@@ -6,7 +6,6 @@ import org.junit.Test
 
 class NSpekDescriptionTest {
 
-
     @Test
     fun shouldRegisterClassRootDescription() {
         assertEquals(ExampleTestClass::class.java.name, NSpekRunner(ExampleTestClass::class.java).description.displayName)
