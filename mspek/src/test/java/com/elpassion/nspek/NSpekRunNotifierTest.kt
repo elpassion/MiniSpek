@@ -2,7 +2,6 @@ package com.elpassion.nspek
 
 import org.junit.Assert
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 
 class NSpekRunNotifierTest {
@@ -39,7 +38,6 @@ class NSpekRunNotifierTest {
     }
 
     @Test
-    @Ignore
     fun shouldHaveFailingNestedTest() {
         val second = runClassTests(ExampleTestClass::class.java).second
         Assert.assertTrue(second.any { it is Notification.Start && it.description.displayName == "nested-failing-subtest(sub-suite)" })
@@ -58,7 +56,7 @@ class NSpekRunNotifierTest {
                     assertTrue(true)
                 }
                 "nested-failing-subtest" o {
-//                    assertTrue(false)
+                    assertTrue(false)
                 }
             }
         }

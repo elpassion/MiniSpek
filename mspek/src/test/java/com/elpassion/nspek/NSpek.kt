@@ -37,8 +37,8 @@ fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
     val descriptions = runMethodsTests(testClass).map { testBranch ->
         testBranch.copy(names = listOf(testClass.name) + testBranch.names)
     }
-    val descriptionsTree = descriptions.map { it.names }.toTree().getDescriptions()
-    return descriptionsTree.first() to notifications
+    val descriptionTree = descriptions.toTree()
+    return descriptionTree.getDescriptions().first() to descriptionTree.getNotifications()
 }
 
 private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
@@ -72,15 +72,15 @@ data class TestBranch(val names: List<String>, val throwable: Throwable? = null)
 
 data class InfiniteMap(val throwable: Throwable? = null, val description: Description) : MutableMap<String, InfiniteMap> by mutableMapOf()
 
-private fun List<List<String>>.toTree(): InfiniteMap {
+private fun List<TestBranch>.toTree(): InfiniteMap {
     val map = InfiniteMap(description = Description.createSuiteDescription("DUMMY ROOT DESCRIPTION"))
-    forEach { names ->
+    forEach { (names, throwable) ->
         names.foldIndexed(map, { index, acc, name ->
             acc.getOrPut(name, {
                 if (index != names.lastIndex) {
-                    InfiniteMap(description = Description.createSuiteDescription(name))
+                    InfiniteMap(description = Description.createSuiteDescription(name), throwable = throwable)
                 } else {
-                    InfiniteMap(description = Description.createTestDescription(names[index - 1], name))
+                    InfiniteMap(description = Description.createTestDescription(names[index - 1], name), throwable = throwable)
                 }
             })
         })
@@ -96,6 +96,12 @@ private fun InfiniteMap.getDescriptions(): List<Description> {
             map.description
         }
     }
+}
+
+private fun InfiniteMap.getNotifications(): List<Notification> {
+    val startNotification = listOf(Notification.Start(description))
+    val endNotification = listOf(if (throwable != null) Notification.Failure(description, throwable) else Notification.End(description))
+    return startNotification + values.flatMap { it.getNotifications() } + endNotification
 }
 
 private fun Description.addAllChildren(descriptions: List<Description>) = apply {
