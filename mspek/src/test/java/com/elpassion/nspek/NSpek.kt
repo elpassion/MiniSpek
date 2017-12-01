@@ -113,7 +113,7 @@ private fun InfiniteMap.getDescriptions(): List<Description> {
 }
 
 private fun InfiniteMap.getNotifications(): List<Notification> {
-    return if (this is InfiniteMap.Branch) {
+    return if (this is InfiniteMap.Branch && isEmpty()) {
         val startNotification = listOf(Notification.Start(description))
         val endNotification = listOf(if (throwable != null) Notification.Failure(description, throwable) else Notification.End(description))
         startNotification + values.flatMap { it.getNotifications() } + endNotification

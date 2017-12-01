@@ -9,6 +9,9 @@ class NSpekRunnerExample {
     fun NSpekMethodContext.test() {
         "subtest" o {
             assertTrue(true)
+            "nested-subtest" o {
+                assertTrue(false)
+            }
         }
         assertTrue(true)
     }
