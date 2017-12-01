@@ -22,15 +22,42 @@ class NSpekRunner(testClass: Class<*>) : Runner() {
     override fun getDescription(): Description = rootDescription
 
     override fun run(notifier: RunNotifier) {
-        notifications.forEach {
-            when (it) {
-                is Notification.Start -> notifier.fireTestStarted(it.description)
-                is Notification.Failure -> {
-                    notifier.fireTestFailure(Failure(it.description, it.cause))
-                    notifier.fireTestFinished(it.description)
-                }
-                is Notification.End -> notifier.fireTestFinished(it.description)
+        val notifiers = customNotifiers + JunitNotifierWrapper(notifier)
+        notifications.forEach { notification ->
+            notifiers.forEach { notifier ->
+                notifier.invoke(notification)
             }
+        }
+    }
+
+    companion object {
+        var customNotifiers = listOf<(Notification) -> Unit>(LoggingNotifier())
+    }
+}
+
+private class LoggingNotifier : (Notification) -> Unit {
+    override fun invoke(it: Notification) {
+        when (it) {
+            is Notification.Start -> println(it.description.displayName)
+            is Notification.End -> println("SUCCESS.(${it.location})\n")
+            is Notification.Failure -> {
+                println("FAILURE.(${it.location})")
+                println("BECAUSE.(${it.cause.stackTrace.first()})")
+                println("${it.cause}\n")
+            }
+        }
+    }
+}
+
+private class JunitNotifierWrapper(private val notifier: RunNotifier) : (Notification) -> Unit {
+    override fun invoke(notification: Notification) {
+        when (notification) {
+            is Notification.Start -> notifier.fireTestStarted(notification.description)
+            is Notification.Failure -> {
+                notifier.fireTestFailure(Failure(notification.description, notification.cause))
+                notifier.fireTestFinished(notification.description)
+            }
+            is Notification.End -> notifier.fireTestFinished(notification.description)
         }
     }
 }
@@ -52,10 +79,10 @@ private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
             if (results.isNotEmpty()) {
                 results
             } else {
-                listOf(TestBranch(names = listOf(method.name)))
+                listOf(TestBranch(names = listOf(method.name), location = currentUserCodeLocation))
             }
         } catch (t: Throwable) {
-            listOf(TestBranch(names = listOf(method.name), throwable = t))
+            listOf(TestBranch(names = listOf(method.name), throwable = t, location = currentUserCodeLocation))
         }
     }
 }
@@ -69,33 +96,35 @@ private fun runMethodTests(method: Method, testClass: Class<*>): List<TestBranch
             method.invoke(testClass.newInstance(), nSpekContext)
             break
         } catch (e: InvocationTargetException) {
-            if (e.cause is TestEnd) {
-                descriptionsNames.add(TestBranch(ArrayList(nSpekContext.names), e.cause?.cause))
+            val cause = e.cause
+            if (cause is TestEnd) {
+                descriptionsNames.add(TestBranch(ArrayList(nSpekContext.names), cause.cause, location = cause.codeLocation))
             } else {
-                throw e.cause!!
+                throw cause!!
             }
         }
     }
     return descriptionsNames
 }
 
-data class TestBranch(val names: List<String>, val throwable: Throwable? = null)
+data class TestBranch(val names: List<String>, val throwable: Throwable? = null, val location: CodeLocation)
 
 sealed class InfiniteMap : MutableMap<String, InfiniteMap> by mutableMapOf() {
-    data class Branch(val throwable: Throwable? = null, val description: Description) : InfiniteMap()
+    data class Branch(val throwable: Throwable? = null, val description: Description, val location: CodeLocation) : InfiniteMap()
     class Root : InfiniteMap()
 }
 
 private fun List<TestBranch>.toTree(): InfiniteMap {
     val map: InfiniteMap = InfiniteMap.Root()
-    forEach { (names, throwable) ->
+    forEach { (names, throwable, location) ->
         names.foldIndexed(map, { index, acc, name ->
             acc.getOrPut(name, {
-                if (index != names.lastIndex) {
-                    InfiniteMap.Branch(description = Description.createSuiteDescription(name), throwable = throwable)
+                val description = if (index != names.lastIndex) {
+                    Description.createSuiteDescription(name)
                 } else {
-                    InfiniteMap.Branch(description = Description.createTestDescription(names[index - 1], name), throwable = throwable)
+                    Description.createTestDescription(names[index - 1], name)
                 }
+                InfiniteMap.Branch(description = description, throwable = throwable, location = location)
             })
         })
     }
@@ -114,8 +143,12 @@ private fun InfiniteMap.getDescriptions(): List<Description> {
 
 private fun InfiniteMap.getNotifications(): List<Notification> {
     return if (this is InfiniteMap.Branch && isEmpty()) {
-        val startNotification = listOf(Notification.Start(description))
-        val endNotification = listOf(if (throwable != null) Notification.Failure(description, throwable) else Notification.End(description))
+        val startNotification = listOf(Notification.Start(description, location))
+        val endNotification = if (throwable != null) {
+            Notification.Failure(description, location, throwable)
+        } else {
+            Notification.End(description, location)
+        }
         startNotification + values.flatMap { it.getNotifications() } + endNotification
     } else {
         values.flatMap { it.getNotifications() }
@@ -129,9 +162,12 @@ private fun Description.addAllChildren(descriptions: List<Description>) = apply 
 }
 
 sealed class Notification {
-    data class Start(val description: Description) : Notification()
-    data class End(val description: Description) : Notification()
-    data class Failure(val description: Description, val cause: Throwable) : Notification()
+    abstract val description: Description
+    abstract val location: CodeLocation
+
+    data class Start(override val description: Description, override val location: CodeLocation) : Notification()
+    data class End(override val description: Description, override val location: CodeLocation) : Notification()
+    data class Failure(override val description: Description, override val location: CodeLocation, val cause: Throwable) : Notification()
 }
 
 class NSpekMethodContext {
@@ -144,15 +180,15 @@ class NSpekMethodContext {
             try {
                 code()
                 finishedTests.add(currentUserCodeLocation)
-                throw TestEnd()
+                throw TestEnd(codeLocation = currentUserCodeLocation)
             } catch (ex: TestEnd) {
                 throw ex
             } catch (ex: Throwable) {
                 finishedTests.add(currentUserCodeLocation)
-                throw TestEnd(ex)
+                throw TestEnd(ex, codeLocation = currentUserCodeLocation)
             }
         }
     }
 }
 
-class TestEnd(cause: Throwable? = null) : RuntimeException(cause)
+class TestEnd(cause: Throwable? = null, val codeLocation: CodeLocation) : RuntimeException(cause)
