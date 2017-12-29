@@ -83,6 +83,7 @@ class NSpekCodeInvocationTest {
     }
 
     class ExampleTestClass {
+        @Test
         fun NSpekMethodContext.test() {
             codeFragment.first()
             "sub-test" o {

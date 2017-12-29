@@ -2,6 +2,7 @@ package com.elpassion.nspek
 
 import com.elpassion.mspek.CodeLocation
 import com.elpassion.mspek.currentUserCodeLocation
+import org.junit.Test
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
@@ -71,7 +72,7 @@ fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
 }
 
 private fun runMethodsTests(testClass: Class<*>): List<TestBranch> {
-    return testClass.declaredMethods.flatMap { method ->
+    return testClass.declaredMethods.filter { it.getAnnotation(Test::class.java) != null }.flatMap { method ->
         try {
             val results = runMethodTests(method, testClass).map { testBranch ->
                 testBranch.copy(names = listOf(method.name) + testBranch.names)
