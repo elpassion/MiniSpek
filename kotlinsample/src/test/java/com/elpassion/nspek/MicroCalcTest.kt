@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 @RunWith(NSpekRunner::class)
 class MicroCalcTest {
 
+    @Test
     fun NSpekMethodContext.`MicroCalc tests`() {
         "create SUT" o {
 

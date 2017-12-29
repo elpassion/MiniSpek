@@ -61,6 +61,7 @@ private class JunitNotifierWrapper(private val notifier: RunNotifier) : (Notific
 }
 
 fun runClassTests(testClass: Class<*>): Pair<Description, List<Notification>> {
+    require(testClass.methods.filter { it.getAnnotation(Test::class.java) != null }.isNotEmpty()) { "At least one method should be annotated with com.elpassion.nspek.Test" }
     val descriptions = runMethodsTests(testClass).map { testBranch ->
         testBranch.copy(names = listOf(testClass.name) + testBranch.names)
     }
