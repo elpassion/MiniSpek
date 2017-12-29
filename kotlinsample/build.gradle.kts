@@ -7,7 +7,7 @@ plugins {
 }
 
 application {
-    mainClassName = "com.elpassion.mspek.MainKt"
+    mainClassName = "com.elpassion.nspek.MainKt"
 }
 
 repositories {

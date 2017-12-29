@@ -1,8 +1,5 @@
 package com.elpassion.nspek
 
-import com.elpassion.mspek.CodeLocation
-import com.elpassion.mspek.causeLocation
-import com.elpassion.mspek.currentUserCodeLocation
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure

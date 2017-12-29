@@ -1,8 +1,4 @@
-package com.elpassion.mspek
-
-import org.junit.Assert
-
-infix fun <T> T.eq(expected: T) = Assert.assertEquals(expected, this)
+package com.elpassion.nspek
 
 val currentUserCodeLocation get() = Thread.currentThread().stackTrace.userCodeLocation
 

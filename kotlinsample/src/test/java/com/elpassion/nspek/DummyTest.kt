@@ -1,4 +1,4 @@
-package com.elpassion.mspek
+package com.elpassion.nspek
 
 import org.junit.Test
 

@@ -1,7 +1,7 @@
-package com.elpassion.mspek
+package com.elpassion.nspek
 
 
-class MicroCalc(var result: Int) {
+class AndroCalc(var result: Int) {
     fun add(x: Int) { result += x }
     fun multiplyBy(x: Int) { result *= x }
 }

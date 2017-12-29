@@ -1,18 +1,19 @@
-package com.elpassion.mspek
+package com.elpassion.nspek
 
-import org.junit.runner.RunWith
-import com.elpassion.mspek.MiniSpek.o
 import com.elpassion.mspek.MiniSpek.mspek
+import com.elpassion.mspek.MiniSpek.o
+import com.elpassion.nspek.eq
+import org.junit.runner.RunWith
 
 @RunWith(MiniSpekRunner::class)
-class AndroCalcTest {
+class MicroCalcTest {
 
     init {
-        mspek("AndroCalc tests") {
+        mspek("MicroCalc tests") {
 
             "create SUT" o {
 
-                val sut = com.elpassion.mspek.AndroCalc(10)
+                val sut = MicroCalc(10)
 
                 "check add" o {
                     sut.add(5)
@@ -53,5 +54,4 @@ class AndroCalcTest {
 
         }
     }
-
 }

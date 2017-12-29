@@ -1,4 +1,4 @@
-package com.elpassion.mspek
+package com.elpassion.nspek
 
 fun main(args: Array<String>) {
     val calc = MicroCalc(0)
