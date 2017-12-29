@@ -1,4 +1,5 @@
-# MiniSpek
+# Deprecated: MiniSpek
+Instead go for https://github.com/elpassion/nspek
 Mini tool for testing with syntax similar to Spek, but shorter.
 Test different nested scenarios without any boilerplate code.
 It is a fork of [μSpek](https://github.com/langara/USpek),
