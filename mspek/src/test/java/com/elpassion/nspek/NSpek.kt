@@ -1,8 +1,8 @@
 package com.elpassion.nspek
 
 import com.elpassion.mspek.CodeLocation
+import com.elpassion.mspek.causeLocation
 import com.elpassion.mspek.currentUserCodeLocation
-import org.junit.Test
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
@@ -43,7 +43,7 @@ private class LoggingNotifier : (Notification) -> Unit {
             is Notification.End -> println("SUCCESS.(${it.location})\n")
             is Notification.Failure -> {
                 println("FAILURE.(${it.location})")
-                println("BECAUSE.(${it.cause.stackTrace.first()})")
+                println("BECAUSE.(${it.cause.causeLocation})")
                 println("${it.cause}\n")
             }
         }

@@ -61,7 +61,7 @@ class NSpekDescriptionTest {
     }
 
     class ExampleTestClass {
-        @Test
+        @com.elpassion.nspek.Test
         fun NSpekMethodContext.test() {
             assertTrue(true)
             "subtest" o {
@@ -87,7 +87,7 @@ class NSpekDescriptionTest {
     }
 
     class OtherExampleTestClass {
-        @Test
+        @com.elpassion.nspek.Test
         fun NSpekMethodContext.notatest() {
             assertTrue(true)
             "not-a-subtest" o {

@@ -83,7 +83,7 @@ class NSpekCodeInvocationTest {
     }
 
     class ExampleTestClass {
-        @Test
+        @com.elpassion.nspek.Test
         fun NSpekMethodContext.test() {
             codeFragment.first()
             "sub-test" o {
@@ -107,7 +107,7 @@ class NSpekCodeInvocationTest {
         reset(codeFragment)
     }
 
-    interface CodeFragment{
+    interface CodeFragment {
         fun first()
         fun second()
         fun third()

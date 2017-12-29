@@ -10,7 +10,7 @@ class NSpekErrorHandlingTest {
     }
 
     class ExampleTest {
-        @Test
+        @com.elpassion.nspek.Test
         fun NSpekMethodContext.test() {
             throw NullPointerException()
         }

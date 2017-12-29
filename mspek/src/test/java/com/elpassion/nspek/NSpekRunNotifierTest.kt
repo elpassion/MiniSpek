@@ -46,7 +46,7 @@ class NSpekRunNotifierTest {
 
     class ExampleTestClass {
 
-        @Test
+        @com.elpassion.nspek.Test
         fun NSpekMethodContext.test() {
             "sub-test" o {
                 assertTrue(true)
