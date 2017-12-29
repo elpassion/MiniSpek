@@ -2,7 +2,7 @@ package com.elpassion.nspek
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import com.elpassion.mspek.R
+import com.elpassion.nspek.R
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
